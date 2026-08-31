@@ -1,5 +1,7 @@
 # BTC Tools Pro - Vanity Search & HEX Private Key Scanner
 
+BTC Tools Pro includes a tool to find new BTC (Vanity) addresses and also has a function for brute force penetration testing to find private keys via BTC addresses, Range or Public Keys.
+
 Live Access: https://dlordsociety32.github.io/BTC-Tools/
 
 ### Features: 
