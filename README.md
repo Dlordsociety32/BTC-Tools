@@ -1,6 +1,6 @@
 # BTC Tools Pro - Vanity Search & HEX Private Key Scanner
 
-Live Web Access: 
+Live Access: 
 
 **Features:** 
 * Auto Vanity Search:
