@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tools - Bitcoin Vanity & Private Key Range Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/elliptic/6.5.4/elliptic.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        btc: {
+                            gold: '#f7931a',
+                            hover: '#e08313',
+                            dark: '#111827',
+                            card: '#1f2937',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .theme-dark-gold {
+            --bg-main: #0b0f17;
+            --bg-card: #151c28;
+            --bg-card-hover: #1c2636;
+            --accent: #f7931a;
+            --accent-glow: rgba(247, 147, 26, 0.25);
+            --text-main: #f3f4f6;
+            --border: #2d3748;
+        }
+
+        .theme-matrix {
+            --bg-main: #050b05;
+            --bg-card: #0d1a0d;
+            --bg-card-hover: #142814;
+            --accent: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.3);
+            --text-main: #ecfdf5;
+            --border: #15803d;
+        }
+
+        .theme-cyberpunk {
+            --bg-main: #0f051d;
+            --bg-card: #1c0a35;
+            --bg-card-hover: #290e4e;
+            --accent: #ec4899;
+            --accent-glow: rgba(236, 72, 153, 0.3);
+            --text-main: #fdf2f8;
+            --border: #831843;
+        }
+
+        .theme-light-gold {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --accent: #d97706;
+            --accent-glow: rgba(217, 119, 6, 0.2);
+            --text-main: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .app-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .app-card:hover {
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .accent-text {
+            color: var(--accent);
+        }
+
+        .accent-border {
+            border-color: var(--accent);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(155, 155, 155, 0.3);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        [dir="rtl"] {
+            text-align: right;
+        }
+    </style>
+</head>
+<body class="theme-dark-gold min-h-screen font-sans antialiased flex flex-col justify-between selection:bg-yellow-500 selection:text-black">
+
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-opacity-90 border-b border-gray-800 px-3 sm:px-6 py-3 transition-colors">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            
+            <div class="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer shrink-0" onclick="switchTab('vanity')">
+                <div class="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 text-black shadow-lg shadow-yellow-500/20">
+                    <i class="fa-brands fa-bitcoin text-xl sm:text-2xl font-bold"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="font-extrabold text-lg sm:text-xl tracking-tight">BTC Tools</span>
+                        <span class="text-[9px] sm:text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-semibold border border-amber-500/30">PRO</span>
+                    </div>
+                    <p class="text-[10px] sm:text-xs text-gray-400 font-medium hidden sm:block" data-i18n="subtitle">Vanity Search & HEX Private Key Scanner</p>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center space-x-1 p-1 rounded-xl bg-gray-900/60 border border-gray-800">
+                <button onclick="switchTab('vanity')" id="tab-btn-vanity" class="px-3.5 py-2 rounded-lg text-xs lg:text-sm font-semibold flex items-center space-x-2 transition bg-amber-500 text-black shadow-sm">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span data-i18n="nav_vanity">Auto Vanity Search</span>
+                </button>
+                <button onclick="switchTab('hex')" id="tab-btn-hex" class="px-3.5 py-2 rounded-lg text-xs lg:text-sm font-semibold flex items-center space-x-2 transition text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span data-i18n="nav_hex">HEX Range Scan</span>
+                </button>
+                <button onclick="switchTab('saved')" id="tab-btn-saved" class="px-3.5 py-2 rounded-lg text-xs lg:text-sm font-semibold flex items-center space-x-2 transition text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span data-i18n="nav_saved">Saved Vault</span>
+                    <span id="saved-badge" class="px-1.5 py-0.2 text-xs bg-amber-500/20 text-amber-400 rounded-full font-mono">0</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-2">
+                <!-- Active Language Indicator Pill -->
+                <div id="active-lang-indicator" onclick="toggleMenuDrawer()" class="cursor-pointer px-2.5 py-1.5 rounded-xl bg-gray-800/80 border border-gray-700 hover:border-amber-500 text-xs font-semibold text-gray-300 flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-globe text-amber-400"></i>
+                    <span id="active-lang-code" class="uppercase font-mono">EN</span>
+                </div>
+
+                <button id="menu-btn" onclick="toggleMenuDrawer()" class="p-2 sm:p-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold focus:outline-none transition flex items-center space-x-1.5 shadow-md" title="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                    <span class="text-xs font-extrabold hidden sm:inline" data-i18n="menu">MENU</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="menu-drawer" class="fixed inset-0 z-50 transform translate-x-full transition-transform duration-300 ease-in-out pointer-events-none">
+        <div id="drawer-backdrop" onclick="toggleMenuDrawer()" class="absolute inset-0 bg-black/70 opacity-0 transition-opacity duration-300 pointer-events-auto backdrop-blur-xs"></div>
+        
+        <div class="absolute right-0 top-0 bottom-0 w-84 max-w-[88vw] app-card shadow-2xl p-5 sm:p-6 overflow-y-auto pointer-events-auto flex flex-col justify-between border-l border-gray-800">
+            <div class="space-y-6">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-sliders accent-text text-xl"></i>
+                        <h3 class="font-bold text-base sm:text-lg" data-i18n="drawer_title">Settings & Menu</h3>
+                    </div>
+                    <button onclick="toggleMenuDrawer()" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-gray-900/80 border border-gray-800 space-y-2">
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fa-solid fa-language text-sm"></i>
+                        <span data-i18n="select_lang">Select Language (16 Languages)</span>
+                    </label>
+                    <select id="lang-selector" onchange="changeLanguage(this.value)" class="w-full bg-gray-800 border border-gray-700 text-xs font-medium rounded-lg p-2.5 text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-sm">
+                        <option value="en">🌐 English (Default)</option>
+                        <option value="ms">🇲🇾 Bahasa Melayu</option>
+                        <option value="id">🇮🇩 Bahasa Indonesia</option>
+                        <option value="ja">🇯🇵 日本語 (Jepun)</option>
+                        <option value="zh">🇨🇳 中文 (China)</option>
+                        <option value="ko">🇰🇷 한국어 (Korea)</option>
+                        <option value="th">🇹🇭 ไทย (Thailand)</option>
+                        <option value="ru">🇷🇺 Русский (Rusia)</option>
+                        <option value="uk">🇺🇦 Українська (Ukraine)</option>
+                        <option value="hi">🇮🇳 हिन्दी (India)</option>
+                        <option value="es">🇪🇸 Español (Sepanyol)</option>
+                        <option value="de">🇩🇪 Deutsch (Jerman)</option>
+                        <option value="it">🇮🇹 Italiano (Itali)</option>
+                        <option value="la">🏛️ Latina (Latin)</option>
+                        <option value="ar">🇸🇦 العربية (Arab)</option>
+                        <option value="jv">🇮🇩 Basa Jawa (Jawa)</option>
+                    </select>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-gray-900/80 border border-gray-800 space-y-2">
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fa-solid fa-palette text-sm"></i>
+                        <span data-i18n="select_theme">Select Theme</span>
+                    </label>
+                    <select id="theme-selector" onchange="changeTheme(this.value)" class="w-full bg-gray-800 border border-gray-700 text-xs font-medium rounded-lg p-2.5 text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-sm">
+                        <option value="theme-dark-gold">⚡ Dark Gold (Default)</option>
+                        <option value="theme-matrix">🟢 Matrix Neon</option>
+                        <option value="theme-cyberpunk">💗 Cyberpunk</option>
+                        <option value="theme-light-gold">☀️ Light Classic</option>
+                    </select>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-gray-900/80 border border-gray-800 space-y-3">
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fa-solid fa-microchip text-sm"></i>
+                        <span data-i18n="cpu_cores">CPU Cores / Threads</span>
+                    </label>
+                    
+                    <select id="menu-cpu-cores" onchange="updateCpuCores(this.value)" class="w-full bg-gray-800 border border-gray-700 text-xs font-medium rounded-lg p-2.5 text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-sm">
+                        <!-- Options populated via JS -->
+                    </select>
+
+                    <label class="block text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5 pt-1">
+                        <i class="fa-solid fa-gauge-high text-sm"></i>
+                        <span data-i18n="perf_mode">Performance Mode</span>
+                    </label>
+                    
+                    <select id="menu-perf-mode" onchange="updatePerfMode(this.value)" class="w-full bg-gray-800 border border-gray-700 text-xs font-medium rounded-lg p-2.5 text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-sm">
+                        <option value="eco" data-i18n="perf_eco">🌿 Eco (Low Heat / Days & Months)</option>
+                        <option value="balanced" selected data-i18n="perf_balanced">⚖️ Balanced</option>
+                        <option value="turbo" data-i18n="perf_turbo">🚀 Turbo (Max Speed)</option>
+                    </select>
+                    <p class="text-[10px] text-gray-400 italic" data-i18n="cpu_info">Multi-threading offloads calculations to background Web Workers so your browser stays fluid during multi-day searches.</p>
+                </div>
+
+                <div class="space-y-2 md:hidden">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2" data-i18n="nav_title">Navigation</p>
+                    <button onclick="switchTab('vanity'); toggleMenuDrawer();" class="w-full text-left p-3 rounded-xl bg-gray-800/60 hover:bg-gray-800 flex items-center justify-between text-xs font-semibold">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-bolt accent-text w-5"></i>
+                            <span data-i18n="nav_vanity">Auto Vanity Search</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                    </button>
+                    <button onclick="switchTab('hex'); toggleMenuDrawer();" class="w-full text-left p-3 rounded-xl bg-gray-800/60 hover:bg-gray-800 flex items-center justify-between text-xs font-semibold">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-microchip text-indigo-400 w-5"></i>
+                            <span data-i18n="nav_hex">HEX Range Scan</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                    </button>
+                    <button onclick="switchTab('saved'); toggleMenuDrawer();" class="w-full text-left p-3 rounded-xl bg-gray-800/60 hover:bg-gray-800 flex items-center justify-between text-xs font-semibold">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-bookmark text-emerald-400 w-5"></i>
+                            <span data-i18n="nav_saved">Saved Vault</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-500 text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 space-y-1">
+                        <p class="font-bold flex items-center space-x-1.5">
+                            <i class="fa-solid fa-shield-halved text-sm"></i>
+                            <span data-i18n="secure_title">100% Client-Side & Secure</span>
+                        </p>
+                        <p class="text-gray-300 text-[11px]" data-i18n="secure_desc">All keys are generated directly in your browser without external servers.</p>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-gray-800/60 border border-gray-700/60 text-xs text-gray-300 space-y-2">
+                        <p class="font-semibold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-lightbulb accent-text"></i>
+                            <span data-i18n="tips_title">Vanity Search Tips</span>
+                        </p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-400 text-[11px]">
+                            <li data-i18n="tip1">Legacy Bitcoin addresses start with <strong>1</strong>.</li>
+                            <li data-i18n="tip2">Invalid Base58 chars: <code>0, O, I, l</code>.</li>
+                            <li data-i18n="tip3">3-4 character prefixes are found quickly.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="pt-4 border-t border-gray-800 text-center text-[11px] text-gray-500">
+                BTC Tools Pro v3.2 &bull; Multi-Core Engine & Mobile Optimized
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-5 flex-grow w-full">
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 mb-6">
+            <div class="app-card p-3 sm:p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider" data-i18n="stat_speed">Search Speed</p>
+                    <p id="stat-speed" class="text-base sm:text-xl font-bold font-mono accent-text">0 <span class="text-[10px] sm:text-xs text-gray-400 font-sans">keys/s</span></p>
+                </div>
+                <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400 shrink-0">
+                    <i class="fa-solid fa-gauge-high text-base sm:text-lg"></i>
+                </div>
+            </div>
+
+            <div class="app-card p-3 sm:p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider" data-i18n="stat_total">Total Tested</p>
+                    <p id="stat-total" class="text-base sm:text-xl font-bold font-mono">0</p>
+                </div>
+                <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
+                    <i class="fa-solid fa-calculator text-base sm:text-lg"></i>
+                </div>
+            </div>
+
+            <div class="app-card p-3 sm:p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider" data-i18n="stat_time">Elapsed Time</p>
+                    <p id="stat-time" class="text-base sm:text-xl font-bold font-mono">00:00:00</p>
+                </div>
+                <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400 shrink-0">
+                    <i class="fa-solid fa-stopwatch text-base sm:text-lg"></i>
+                </div>
+            </div>
+
+            <div class="app-card p-3 sm:p-3.5 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider" data-i18n="stat_matches">Found Matches</p>
+                    <p id="stat-matches" class="text-base sm:text-xl font-bold font-mono text-emerald-400">0</p>
+                </div>
+                <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
+                    <i class="fa-solid fa-circle-check text-base sm:text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <section id="section-vanity" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <div class="lg:col-span-5 app-card p-4 sm:p-6 rounded-2xl shadow-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                            <h2 class="text-base sm:text-lg font-bold flex items-center space-x-2">
+                                <i class="fa-solid fa-sliders accent-text"></i>
+                                <span data-i18n="vanity_params">Vanity Parameters</span>
+                            </h2>
+                            <span class="text-[10px] sm:text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-medium border border-emerald-500/30 flex items-center space-x-1">
+                                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span data-i18n="auto_active">Auto Mode Ready</span>
+                            </span>
+                        </div>
+
+                        <div class="p-3 sm:p-3.5 rounded-xl bg-gray-800/60 border border-gray-700/60 mb-4 flex items-center justify-between">
+                            <div>
+                                <label for="auto-search-toggle" class="text-xs sm:text-sm font-bold block cursor-pointer" data-i18n="auto_mode_label">Auto Search Mode</label>
+                                <p class="text-[10px] sm:text-xs text-gray-400" data-i18n="auto_mode_desc">Searches instantly as you type prefix/suffix</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0 ml-2">
+                                <input type="checkbox" id="auto-search-toggle" checked onchange="toggleAutoSearchMode()" class="sr-only peer">
+                                <div class="w-10 h-5 sm:w-11 sm:h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                        <div class="p-3 sm:p-3.5 rounded-xl bg-gray-800/60 border border-gray-700/60 mb-4 grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-amber-400 mb-1 flex items-center space-x-1">
+                                    <i class="fa-solid fa-microchip"></i>
+                                    <span data-i18n="cpu_cores">CPU Cores</span>
+                                </label>
+                                <select id="panel-cpu-cores" onchange="updateCpuCores(this.value)" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-1.5 font-mono text-[11px] text-gray-200 focus:outline-none focus:border-amber-500">
+                                    <!-- Options populated via JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-amber-400 mb-1 flex items-center space-x-1">
+                                    <i class="fa-solid fa-gauge-high"></i>
+                                    <span data-i18n="perf_mode">Perf Mode</span>
+                                </label>
+                                <select id="panel-perf-mode" onchange="updatePerfMode(this.value)" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-amber-500">
+                                    <option value="eco" data-i18n="perf_eco">🌿 Eco Mode</option>
+                                    <option value="balanced" selected data-i18n="perf_balanced">⚖️ Balanced</option>
+                                    <option value="turbo" data-i18n="perf_turbo">🚀 Turbo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-xs font-semibold text-gray-300" data-i18n="prefix_label">Prefix (Starts with 1)</label>
+                                    <span class="text-[10px] text-gray-400" data-i18n="prefix_ex">Ex: 1BTC, 1Love</span>
+                                </div>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 font-mono font-bold text-sm">1</span>
+                                    <input type="text" id="vanity-prefix" oninput="handlePrefixInput()" placeholder="Type prefix (e.g. BTC)" data-i18n-placeholder="prefix_ph" 
+                                           class="w-full pl-7 pr-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl font-mono text-sm uppercase focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+                                </div>
+                                <p id="prefix-error" class="text-[11px] text-red-400 mt-1 hidden"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="err_base58">Contains invalid Base58 characters (0, O, I, l)</span></p>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-xs font-semibold text-gray-300" data-i18n="suffix_label">Suffix (Optional)</label>
+                                    <span class="text-[10px] text-gray-400" data-i18n="suffix_ex">Ex: 77, WIN</span>
+                                </div>
+                                <input type="text" id="vanity-suffix" oninput="handlePrefixInput()" placeholder="Type suffix here" data-i18n-placeholder="suffix_ph" 
+                                       class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl font-mono text-sm uppercase focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition">
+                            </div>
+
+                            <div class="pt-1">
+                                <button type="button" onclick="toggleAdvancedSearchAccordion()" class="w-full py-2 px-3 bg-gray-900 hover:bg-gray-800 border border-gray-700/80 rounded-xl text-xs font-semibold text-amber-400 flex items-center justify-between transition">
+                                    <span class="flex items-center space-x-2">
+                                        <i class="fa-solid fa-bullseye text-sm"></i>
+                                        <span data-i18n="advanced_target_title">Target Address & PubKey Search</span>
+                                    </span>
+                                    <i id="accordion-chevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
+                                </button>
+                                
+                                <div id="advanced-search-panel" class="hidden space-y-3 pt-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-300 mb-1" data-i18n="exact_addr">Target Full Address (Optional)</label>
+                                        <input type="text" id="target-address-input" oninput="handlePrefixInput()" placeholder="Ex: 1BgG23dBnn3Cj3edL3khZJw..." data-i18n-placeholder="exact_addr_ph" 
+                                               class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-xl font-mono text-xs text-amber-300 focus:outline-none focus:border-amber-500 transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-300 mb-1" data-i18n="target_pubkey">Target Public Key (HEX) (Optional)</label>
+                                        <input type="text" id="target-pubkey-input" oninput="handlePrefixInput()" placeholder="Ex: 0279be667ef9dc..." data-i18n-placeholder="target_pubkey_ph" 
+                                               class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-xl font-mono text-xs text-indigo-300 focus:outline-none focus:border-amber-500 transition">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-1 text-xs">
+                                <label class="flex items-center space-x-2 cursor-pointer text-gray-300">
+                                    <input type="checkbox" id="vanity-case" onchange="handlePrefixInput()" class="rounded bg-gray-900 border-gray-700 text-amber-500 focus:ring-amber-500">
+                                    <span data-i18n="case_sensitive">Case Sensitive</span>
+                                </label>
+                                <span id="diff-estimate" class="font-mono text-amber-400 text-[11px]">Estimate: Easy</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-5 mt-5 border-t border-gray-800 space-y-3">
+                        <div class="flex gap-1.5 sm:gap-2">
+                            <button id="btn-start-vanity" onclick="startVanitySearch()" class="flex-1 btn-primary py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 shadow-lg">
+                                <i class="fa-solid fa-play"></i>
+                                <span data-i18n="btn_start">Start Search</span>
+                            </button>
+                            <button id="btn-pause-vanity" onclick="togglePauseVanitySearch()" disabled class="px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i id="icon-pause-vanity" class="fa-solid fa-pause"></i>
+                                <span id="text-pause-vanity" data-i18n="btn_pause">Pause</span>
+                            </button>
+                            <button id="btn-stop-vanity" onclick="stopVanitySearch()" disabled class="px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30 transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-stop"></i>
+                                <span data-i18n="btn_stop">Stop</span>
+                            </button>
+                        </div>
+                        <p class="text-[10px] sm:text-[11px] text-gray-400 text-center" data-i18n="auto_search_note">Note: In Auto Mode, search starts automatically when typing.</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <div class="app-card p-4 sm:p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                                <span data-i18n="scan_status_label">Live Scan Status</span>
+                            </span>
+                            <span id="scan-status-text" class="text-xs font-mono font-semibold text-amber-400" data-i18n="status_ready">READY</span>
+                        </div>
+
+                        <div class="p-3.5 sm:p-4 rounded-xl bg-gray-900/80 border border-gray-800 font-mono text-xs space-y-2">
+                            <div>
+                                <span class="text-gray-500 block text-[10px]" data-i18n="live_address">LIVE ADDRESS:</span>
+                                <p id="live-address" class="text-xs sm:text-sm font-bold text-gray-300 truncate">1...</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 block text-[10px]" data-i18n="live_privkey">PRIVATE KEY (HEX):</span>
+                                <p id="live-privkey" class="text-[11px] sm:text-xs text-gray-400 truncate">0000000000000000000000000000000000000000000000000000000000000000</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-card p-4 sm:p-6 rounded-2xl shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sm sm:text-base flex items-center space-x-2">
+                                <i class="fa-solid fa-list-check text-emerald-400"></i>
+                                <span data-i18n="found_results_title">Found Vanity Results</span>
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="exportVanityResultsTxt()" class="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-400 text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-sm">
+                                    <i class="fa-solid fa-file-arrow-down"></i>
+                                    <span data-i18n="btn_export_txt">Export TXT</span>
+                                </button>
+                                <button onclick="clearVanityResults()" class="text-xs text-gray-400 hover:text-red-400 transition flex items-center space-x-1 px-2 py-1.5">
+                                    <i class="fa-solid fa-trash"></i>
+                                    <span data-i18n="clear_list">Clear List</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="vanity-results-container" class="space-y-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                            <div id="vanity-empty-state" class="text-center py-10 text-gray-500">
+                                <i class="fa-solid fa-magnifying-glass text-3xl mb-2 opacity-50"></i>
+                                <p class="text-xs sm:text-sm" data-i18n="empty_results">No vanity results found yet. Start searching to generate custom addresses.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="section-hex" class="hidden space-y-6">
+            <div class="app-card p-4 sm:p-6 rounded-2xl shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-800 mb-6 gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold flex items-center space-x-2">
+                            <i class="fa-solid fa-microchip text-indigo-400"></i>
+                            <span data-i18n="hex_title">Private Key HEX Range Scan</span>
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-0.5" data-i18n="hex_subtitle">Scan Hexadecimal Private Key ranges for target Bitcoin addresses.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400 whitespace-nowrap" data-i18n="preset_label">Preset:</span>
+                        <select id="hex-preset" onchange="applyHexPreset(this.value)" class="bg-gray-900 border border-gray-700 text-xs font-medium rounded-lg px-2.5 py-1.5 text-gray-200">
+                            <option value="custom" data-i18n="preset_custom">-- Custom Range --</option>
+                            <option value="puzzle1">Bitcoin Puzzle #1 (1 - f)</option>
+                            <option value="puzzle10">Bitcoin Puzzle #10 (200 - 3ff)</option>
+                            <option value="micro">Micro Scan (16 Keys)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <div class="lg:col-span-6 space-y-4">
+
+                        <div class="p-3 rounded-xl bg-gray-900/80 border border-gray-800 grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-indigo-400 mb-1 flex items-center space-x-1">
+                                    <i class="fa-solid fa-microchip"></i>
+                                    <span data-i18n="cpu_cores">CPU Cores</span>
+                                </label>
+                                <select id="hex-panel-cpu-cores" onchange="updateCpuCores(this.value)" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-1.5 font-mono text-[11px] text-gray-200 focus:outline-none focus:border-indigo-500">
+                                    
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-indigo-400 mb-1 flex items-center space-x-1">
+                                    <i class="fa-solid fa-gauge-high"></i>
+                                    <span data-i18n="perf_mode">Perf Mode</span>
+                                </label>
+                                <select id="hex-panel-perf-mode" onchange="updatePerfMode(this.value)" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-indigo-500">
+                                    <option value="eco" data-i18n="perf_eco">🌿 Eco Mode</option>
+                                    <option value="balanced" selected data-i18n="perf_balanced">⚖️ Balanced</option>
+                                    <option value="turbo" data-i18n="perf_turbo">🚀 Turbo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1" data-i18n="start_hex">Start HEX</label>
+                            <input type="text" id="hex-start" value="0000000000000000000000000000000000000000000000000000000000000001" 
+                                   class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl font-mono text-xs text-indigo-300 focus:outline-none focus:border-indigo-500 break-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1" data-i18n="end_hex">End HEX</label>
+                            <input type="text" id="hex-end" value="00000000000000000000000000000000000000000000000000000000000000ff" 
+                                   class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl font-mono text-xs text-indigo-300 focus:outline-none focus:border-indigo-500 break-all">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-semibold text-gray-300" data-i18n="target_addr">Target Address (Optional)</label>
+                                <span class="text-[10px] text-gray-500" data-i18n="blank_all">Leave blank to scan all</span>
+                            </div>
+                            <input type="text" id="hex-target" placeholder="Ex: 1BgG23dBnn3Cj3edL3khZJwA..." 
+                                   class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl font-mono text-xs text-amber-400 focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-semibold text-gray-300" data-i18n="target_pubkey">Target Public Key (Optional)</label>
+                                <span class="text-[10px] text-gray-500">Hex PubKey</span>
+                            </div>
+                            <input type="text" id="hex-target-pubkey" placeholder="Ex: 0279be667ef9dcbb..." 
+                                   class="w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-xl font-mono text-xs text-indigo-300 focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <div class="pt-3 flex flex-wrap gap-2">
+                            <button id="btn-hex-start" onclick="startHexScan()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 sm:py-3 px-3 rounded-xl text-xs sm:text-sm transition shadow-lg flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <span data-i18n="btn_start_hex">Start HEX Scan</span>
+                            </button>
+                            <button id="btn-hex-pause" onclick="togglePauseHexScan()" disabled class="px-3.5 py-2.5 sm:py-3 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 font-bold rounded-xl text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i id="icon-hex-pause" class="fa-solid fa-pause"></i>
+                                <span id="text-hex-pause" data-i18n="btn_pause">Pause</span>
+                            </button>
+                            <button id="btn-hex-stop" onclick="stopHexScan()" disabled class="px-5 py-2.5 sm:py-3 bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30 font-bold rounded-xl text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-stop"></i>
+                                <span data-i18n="btn_stop">Stop</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-6 flex flex-col justify-between space-y-4">
+                        <div class="p-4 rounded-xl bg-gray-900/80 border border-gray-800 space-y-3">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400 font-semibold uppercase" data-i18n="current_hex_pos">Current Pos:</span>
+                                <span id="hex-current-step" class="font-mono text-indigo-400 font-bold text-[11px] sm:text-xs truncate max-w-[65%]">0 / 0</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                                <div id="hex-progress-bar" class="bg-indigo-500 h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-semibold text-gray-400 uppercase" data-i18n="hex_log_title">HEX Scan Log</span>
+                                <button onclick="clearHexLog()" class="text-[11px] text-gray-500 hover:text-gray-300" data-i18n="clear_log">Clear Log</button>
+                            </div>
+                            <div id="hex-log-box" class="h-52 sm:h-56 bg-black/60 rounded-xl border border-gray-800 p-3 font-mono text-[11px] overflow-y-auto space-y-1.5 custom-scrollbar">
+                                <div class="text-gray-600 italic text-center py-8" data-i18n="log_empty">Scan log will appear here...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="section-saved" class="hidden space-y-6">
+            <div class="app-card p-4 sm:p-6 rounded-2xl shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-800 mb-6 gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold flex items-center space-x-2">
+                            <i class="fa-solid fa-vault text-amber-400"></i>
+                            <span data-i18n="vault_title">Saved Key Vault</span>
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-0.5" data-i18n="vault_subtitle">Your saved vanity keys and HEX scan results stored locally.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportSavedKeys()" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold border border-gray-700 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-download"></i>
+                            <span data-i18n="btn_export">Export JSON</span>
+                        </button>
+                        <button onclick="clearAllSavedKeys()" class="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/20 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span data-i18n="btn_clear_all">Delete All</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="saved-keys-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic saved key items generated here -->
+                </div>
+
+                <div id="saved-empty-state" class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-box-open text-4xl mb-3 opacity-40"></i>
+                    <p class="text-sm font-medium" data-i18n="vault_empty">Your vault is empty.</p>
+                    <p class="text-xs text-gray-600 mt-1" data-i18n="vault_empty_sub">Click 'Save' on any search result to store keys here.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="qr-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm hidden">
+        <div class="app-card max-w-sm w-full p-6 rounded-2xl shadow-2xl relative text-center border border-gray-800">
+            <button onclick="closeQrModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="font-bold text-lg mb-1" data-i18n="qr_title">Address QR Code</h3>
+            <p id="qr-modal-address" class="text-xs font-mono text-amber-400 truncate mb-4"></p>
+            
+            <div id="qrcode-container" class="p-3 bg-white rounded-xl inline-block shadow-inner mb-4"></div>
+
+            <button onclick="closeQrModal()" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-xs font-bold rounded-xl text-gray-200 transition" data-i18n="close">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center space-x-3 px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 shadow-2xl text-xs font-medium text-white max-w-xs sm:max-w-md">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-message">Notification Message</span>
+    </div>
+
+    <footer class="border-t border-gray-800/80 py-4 px-4 text-center text-xs text-gray-500 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p data-i18n="footer_copy">&copy; 2026 BitVanity Pro. All cryptographic generation runs locally in browser.</p>
+            <p class="font-mono text-[11px] text-gray-600">Multi-Core Engine & Base58Check</p>
+        </div>
+    </footer>
+
+    <script src="openbtctoolspro.js">
+    </script>
+</body>
+</html>
