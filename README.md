@@ -10,7 +10,7 @@ Live Access: https://dlordsociety32.github.io/BTC-Tools/
   * Supported Target Full Address (Optional)
   * Supported Target Public Key (HEX) (Optional)
   * 
-* HEX Range Scan
+* HEX Range Scan:
   * Supported Target Full Address (Optional)
   * Supported Target Public Key (HEX) (Optional)
 * Save Vault
