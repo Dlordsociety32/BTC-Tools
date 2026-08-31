@@ -17,5 +17,11 @@ Live Access: https://dlordsociety32.github.io/BTC-Tools/
 * CPU Core / Threads Settings
 * Perfomance Mode Options
 
+### Privacy:
+* No results will be save at server
+  * All results will be save offline temporary at your browser/RAM.
+* No data or keying will be save at server
+  * All data or keying will be save offline temporary at your browser/RAM.
+
 ## Was this project useful for you?
 If yes, supported with buy me a coffee via Solana: **78q7TFeP6BDas5g1Eyj9Vr92snTaBTPGQutczXA288eg**
