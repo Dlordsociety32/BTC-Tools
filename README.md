@@ -18,4 +18,4 @@ Live Access: https://dlordsociety32.github.io/BTC-Tools/
 * Perfomance Mode Options
 
 ## Was this project useful for you?
-If yes, supported with buy me a coffe via Solana: **78q7TFeP6BDas5g1Eyj9Vr92snTaBTPGQutczXA288eg**
+If yes, supported with buy me a coffee via Solana: **78q7TFeP6BDas5g1Eyj9Vr92snTaBTPGQutczXA288eg**
