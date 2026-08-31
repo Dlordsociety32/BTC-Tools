@@ -2,7 +2,7 @@
 
 Live Access: https://dlordsociety32.github.io/BTC-Tools/
 
-**Features:** 
+## Features: 
 * Auto Vanity Search:
   * Supported Saving Found Vanity Results as Teks File [TXT])
   * Supported Target Full Address (Optional)
