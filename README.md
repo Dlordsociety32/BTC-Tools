@@ -4,6 +4,8 @@ BTC Tools Pro includes tools to find new BTC (Vanity) addresses and also has a f
 
 Live Access: https://dlordsociety32.github.io/BTC-Tools/
 
+Also Visit: https://dlordsociety32.github.io/BTC-Balance-Checker/
+
 ### Features: 
 * Auto Vanity Search:
   * Supported Saving Found Vanity Results as Texts File [TXT]
